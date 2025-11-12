@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Distribution / packaging
+.Python
+build/
+dist/
+eggs/
+*.egg
+parts/
+sdist/
+var/
+wheels/
+*.whl
+*.zip
+
+# Virtual environment
+.venv/
+venv/
+env/
+/site/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.bak
+*.swo
+*.DS_Store
+Thumbs.db
+ehthumbs.db
+.project
+.pydevproject
+.settings/
+
+# OS generated files
+.DS_Store
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# FastAPI specific
+# Uvicorn/Gunicorn related files
+*.pid
+*.sock
+
+# Environment variables
+.env
+.flaskenv
+
+# Testing
+/htmlcov/
+.coverage
+
+# Jupyter Notebooks (if applicable)
+.ipynb_checkpoints/
