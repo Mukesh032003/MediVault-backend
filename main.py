@@ -1,11 +1,13 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import io
 from PIL import Image
 from google.genai import Client
 from typing import List, Optional
+import uvicorn
 
 # Load env
 load_dotenv()
@@ -14,6 +16,67 @@ if not api_key:
     raise ValueError("❌ No Gemini API key found.")
 
 app = FastAPI(title="MediVault Classifier API")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/chat")
+async def chat_with_documents(
+    query: str = Form(...),
+    files: List[UploadFile] = File(default=[])
+):
+    """Chat with uploaded medical documents using Gemini AI"""
+    try:
+        async with Client().aio as aclient:
+            # Process uploaded files
+            file_contents = []
+            if files:
+                for file in files:
+                    if file.content_type and file.content_type.startswith('image/'):
+                        # Handle image files
+                        image_data = await file.read()
+                        image = Image.open(io.BytesIO(image_data))
+                        file_contents.append(image)
+            
+            # Create prompt for medical analysis
+            if file_contents:
+                prompt = f"""
+                You are a medical assistant AI. Analyze the provided medical documents and answer the following question:
+                
+                Question: {query}
+                
+                Please provide a helpful, accurate response based on the medical information in the documents.
+                If you cannot find relevant information, please say so clearly.
+                Keep your response concise and focused on the question asked.
+                """
+            else:
+                prompt = f"""
+                You are a medical assistant AI. The user asked: {query}
+                
+                However, no medical documents were provided. Please let them know they need to upload medical documents first to get specific analysis.
+                """
+            
+            # Generate response using Gemini
+            contents = [prompt] + file_contents
+            response = await aclient.models.generate_content(
+                model='models/gemini-2.5-flash',
+                contents=contents
+            )
+            
+            return JSONResponse({
+                "response": response.text or "I couldn't generate a response. Please try again.",
+                "status": "success"
+            })
+            
+    except Exception as e:
+        print(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/classify-image")
@@ -186,3 +249,8 @@ def clean_text(text: Optional[str]) -> str:
     if not text:
         return ""
     return text.replace('"', '').replace("'", "").strip().lower()
+
+if __name__ == "__main__":
+    print("🚀 Starting MediVault API server...")
+    print(f"📋 API Documentation: http://localhost:8000/docs")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
